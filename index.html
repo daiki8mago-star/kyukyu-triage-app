@@ -276,6 +276,43 @@
     color:var(--sub);
     margin-bottom:20px;
   }
+  .cpr-guide{
+    background:#fff5f5;
+    border:1px solid #f3c9c9;
+    border-radius:12px;
+    padding:16px;
+    margin:0 0 20px;
+    text-align:center;
+  }
+  .cpr-guide-title{
+    font-weight:700;
+    color:var(--red);
+    margin-bottom:4px;
+  }
+  .cpr-pulse-wrap{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:80px;
+  }
+  .cpr-pulse{
+    width:50px;
+    height:50px;
+    border-radius:50%;
+    background:var(--red);
+    animation: cprBeat 0.545s infinite ease-out;
+  }
+  @keyframes cprBeat{
+    0%{ transform:scale(1); opacity:1; }
+    30%{ transform:scale(1.4); opacity:0.55; }
+    100%{ transform:scale(1); opacity:1; }
+  }
+  .cpr-guide-text{
+    font-size:0.85rem;
+    line-height:1.8;
+    color:var(--ink);
+    margin-top:6px;
+  }
   .restart-btn{
     width:100%;
     padding:16px;
@@ -565,6 +602,17 @@ function showResult(level){
            ${triggerFlag.choking ? '<li>咳ができるなら思い切り咳をする。できなければ、椅子の背もたれやテーブルの角にみぞおちを強く押し当て、突き上げるように動く</li>' : ''}
          </ul>`;
 
+    const cprGuideBlock = (hasHelper && triggerFlag.arrestSign) ? `
+      <div class="cpr-guide">
+        <div class="cpr-guide-title">胸骨圧迫のテンポガイド</div>
+        <div class="cpr-pulse-wrap"><div class="cpr-pulse"></div></div>
+        <div class="cpr-guide-text">
+          胸の真ん中を、強く・速く・絶え間なく圧迫してもらってください（成人の目安：約5cm沈む深さ）<br>
+          テンポは1分間に100〜120回。丸の点滅に合わせるのが目安です（「アンパンマンのマーチ」と同じ速さ）<br>
+          可能であれば119のオペレーターの指示を聞きながら続けてください。
+        </div>
+      </div>` : '';
+
     extra.innerHTML = `
       <div class="section-title">電話でオペレーターに伝えること</div>
       <ul class="checklist">
@@ -575,6 +623,7 @@ function showResult(level){
         <li>あなたの連絡先電話番号</li>
       </ul>
       ${helperBlock}
+      ${cprGuideBlock}
       <div class="note-box">通報後、電話を切らずに指示を待ってください。</div>`;
     return;
   }
