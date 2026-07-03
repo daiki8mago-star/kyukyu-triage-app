@@ -293,7 +293,8 @@
         ・今すぐ救急車を呼ぶべきか<br>
         ・今日中に病院を受診すべきか<br>
         ・少し様子を見てよいか<br>
-        の目安をお伝えします。ご本人でも、ご家族の代わりでも使えます。
+        の目安をお伝えします。ご本人でも、ご家族の代わりでも使えます。<br><br>
+        緊急サインの質問は、救急の現場で使われる「ABCD評価」（気道→呼吸→循環→意識の順に命に関わる可能性が高いものから確認する考え方）に沿って並んでいます。
       </p>
       <button class="big-btn" onclick="startQuiz()">はじめる</button>
     </section>
@@ -336,37 +337,47 @@
 </div>
 
 <script>
-// 赤信号：1つでも「はい」で即座に119案内。「わからない」は保留フラグとして記録し、黄信号以上に押し上げる。
-// index 0,1(意識・呼吸)は showResult() の応急手当ブロック分岐と対応しているので、
-// 「そばに人がいる版」「自分ひとり版」ともに並び順を変えないこと。
-
-// そばに人がいる版：観察者目線（その人の様子を見て答える）
-const redQuestions_withHelper = [
-  "呼びかけても反応がない、意識がはっきりしない",
-  "呼吸をしていない、または呼吸が明らかに苦しそう（ヒューヒュー、ゼーゼーなど）",
-  "顔の片側が下がっている／片腕が上がらない／急にろれつが回らなくなった",
-  "突然の激しい胸の痛みや締め付け感を訴えている（冷や汗を伴うこともある）",
-  "けいれんが今も続いている、またはけいれんの後に反応が戻らない",
-  "大量の出血があり、押さえても止まらない",
-  "唇や顔色が紫っぽい、または明らかにいつもと違う顔色",
-  "じんましんが出て、のどの締め付けや息苦しさを訴えている（強いアレルギー反応）",
-  "頭を強く打った後、繰り返し吐いている、または意識がぼんやりしている",
-  "溺れた、またはのどに物が詰まって呼吸ができていない"
+// 赤信号：ABCD評価（Airway気道→Breathing呼吸→Circulation循環→Disability意識・神経の順）に沿って並べ、
+// 命に関わる可能性が高いものから確認する。1つでも「はい」で即座に119案内。
+// 「わからない」は保留フラグとして記録し、黄信号以上に押し上げる。
+// arrestSign: 心停止に近い所見（応急手当ブロックでCPR案内を出す）／ choking: 気道異物（窒息対応の案内を出す）
+const redFlags = [
+  { cat: "A",
+    withHelper: "溺れた、またはのどに物が詰まって呼吸ができていない",
+    alone: "のどに物が詰まって呼吸が苦しい（強く咳をしても取れない）",
+    choking: true },
+  { cat: "A",
+    withHelper: "じんましんが出て、のどの締め付けや息苦しさを訴えている（強いアレルギー反応）",
+    alone: "じんましんが出て、のどが締め付けられる感じや息苦しさがある（強いアレルギー反応）" },
+  { cat: "B",
+    withHelper: "呼吸をしていない、または呼吸が明らかに苦しそう（ヒューヒュー、ゼーゼーなど）",
+    alone: "息が明らかに苦しい、呼吸がいつもと違う（速い・浅い・うまく吸えない）",
+    arrestSign: true },
+  { cat: "B",
+    withHelper: "唇や顔色が紫っぽい、または明らかにいつもと違う顔色",
+    alone: "唇の色が明らかにおかしい、または強いしびれ・脱力とめまいが同時にある" },
+  { cat: "C",
+    withHelper: "突然の激しい胸の痛みや締め付け感を訴えている（冷や汗を伴うこともある）",
+    alone: "突然の激しい胸の痛みや締め付け感がある（冷や汗を伴うこともある）" },
+  { cat: "C",
+    withHelper: "大量の出血があり、押さえても止まらない",
+    alone: "大量の出血があり、押さえても止まらない" },
+  { cat: "D",
+    withHelper: "呼びかけても反応がない、意識がはっきりしない",
+    alone: "目の前が真っ暗になる、今にも気を失いそうな感じがある",
+    arrestSign: true },
+  { cat: "D",
+    withHelper: "顔の片側が下がっている／片腕が上がらない／急にろれつが回らなくなった",
+    alone: "鏡を見ると顔の片側がゆがんでいる／片腕に力が入らずしびれる／話そうとすると言葉がうまく出ない" },
+  { cat: "D",
+    withHelper: "けいれんが今も続いている、またはけいれんの後に反応が戻らない",
+    alone: "体の一部がひきつる・視界がおかしいなどけいれんの前兆がある、またはけいれんから覚めた直後で体がおかしい" },
+  { cat: "D",
+    withHelper: "頭を強く打った後、繰り返し吐いている、または意識がぼんやりしている",
+    alone: "頭を強く打った後、繰り返し吐き気がある、または頭がぼんやりする" }
 ];
 
-// 自分ひとり版：自分で気づける・試せる表現に置き換え（意識喪失は「その前兆」として聞く）
-const redQuestions_alone = [
-  "目の前が真っ暗になる、今にも気を失いそうな感じがある",
-  "息が明らかに苦しい、呼吸がいつもと違う（速い・浅い・うまく吸えない）",
-  "鏡を見ると顔の片側がゆがんでいる／片腕に力が入らずしびれる／話そうとすると言葉がうまく出ない",
-  "突然の激しい胸の痛みや締め付け感がある（冷や汗を伴うこともある）",
-  "体の一部がひきつる・視界がおかしいなどけいれんの前兆がある、またはけいれんから覚めた直後で体がおかしい",
-  "大量の出血があり、押さえても止まらない",
-  "唇の色が明らかにおかしい、または強いしびれ・脱力とめまいが同時にある",
-  "じんましんが出て、のどが締め付けられる感じや息苦しさがある（強いアレルギー反応）",
-  "頭を強く打った後、繰り返し吐き気がある、または頭がぼんやりする",
-  "のどに物が詰まって呼吸が苦しい（強く咳をしても取れない）"
-];
+const CAT_LABELS = { A: "気道", B: "呼吸", C: "循環", D: "意識・神経" };
 
 // 黄信号：いずれか「はい」で今日中の受診を案内
 const yellowQuestions_withHelper = [
@@ -385,7 +396,7 @@ const yellowQuestions_alone = [
   "着替えや水分をとるなど、いつもの動作が急にできなくなった"
 ];
 
-const RED_COUNT = redQuestions_withHelper.length;
+const RED_COUNT = redFlags.length;
 const YELLOW_COUNT = yellowQuestions_withHelper.length;
 
 let stage = "red"; // red -> yellow -> done
@@ -421,24 +432,30 @@ function chooseContext(val){
   renderQuestion();
 }
 
-function currentList(){
-  if(stage === "red") return hasHelper ? redQuestions_withHelper : redQuestions_alone;
-  return hasHelper ? yellowQuestions_withHelper : yellowQuestions_alone;
+function currentQuestionText(){
+  if(stage === "red"){
+    const flag = redFlags[idx];
+    return hasHelper ? flag.withHelper : flag.alone;
+  }
+  const list = hasHelper ? yellowQuestions_withHelper : yellowQuestions_alone;
+  return list[idx];
 }
 
 function renderQuestion(){
-  const list = currentList();
   const totalRed = RED_COUNT;
   const totalAll = RED_COUNT + YELLOW_COUNT;
   const doneCount = stage === "red" ? idx : totalRed + idx;
   el("progressFill").style.width = Math.round((doneCount/totalAll)*100) + "%";
   el("progressLabel").textContent = (doneCount+1) + " / " + totalAll;
 
-  el("stageTag").innerHTML = stage === "red"
-    ? '<span class="stage-tag stage-red">緊急サイン確認中</span>'
-    : '<span class="stage-tag stage-yellow">受診の目安を確認中</span>';
+  if(stage === "red"){
+    const flag = redFlags[idx];
+    el("stageTag").innerHTML = `<span class="stage-tag stage-red">${flag.cat}：${CAT_LABELS[flag.cat]}を確認中</span>`;
+  } else {
+    el("stageTag").innerHTML = '<span class="stage-tag stage-yellow">受診の目安を確認中</span>';
+  }
 
-  el("questionText").textContent = list[idx];
+  el("questionText").textContent = currentQuestionText();
   el("backBtn").style.visibility = "visible";
 }
 
@@ -505,13 +522,14 @@ function showResult(level){
         <a class="call-btn" href="tel:119">📞 119番に電話する</a>
       </div>`;
 
-    const isBreathingOrConsciousness = (lastRedTrigger === 0 || lastRedTrigger === 1);
+    const triggerFlag = redFlags[lastRedTrigger] || {};
     const helperBlock = hasHelper
       ? `<div class="section-title">そばにいる人にお願いすること</div>
          <ul class="checklist">
            <li>119番通報と、症状をオペレーターに伝えるのを手伝ってもらう</li>
            <li>可能なら、その人に玄関や道路まで救急隊を迎えに出てもらう</li>
-           ${isBreathingOrConsciousness ? '<li>反応がない・呼吸がおかしい場合は、電話をスピーカーにしてオペレーターの指示を聞きながら、胸骨圧迫などの応急手当をその人に始めてもらう</li>' : ''}
+           ${triggerFlag.arrestSign ? '<li>反応がない・呼吸がおかしい場合は、電話をスピーカーにしてオペレーターの指示を聞きながら、胸骨圧迫などの応急手当をその人に始めてもらう</li>' : ''}
+           ${triggerFlag.choking ? '<li>咳ができるなら思い切り咳をしてもらう。できなければ、背中の肩甲骨の間を強く叩く（背部叩打法）か、後ろから抱えてみぞおちの下を強く突き上げる（腹部突き上げ法）を試みてもらう</li>' : ''}
          </ul>`
       : `<div class="section-title">ひとりのときにやっておきたいこと</div>
          <ul class="checklist">
@@ -519,6 +537,7 @@ function showResult(level){
            <li>動けるうちに玄関の鍵（マンション等は共通玄関のオートロックも）を開けておく</li>
            <li>倒れても大きな怪我をしにくい、安全な場所に座るか横になる</li>
            <li>通報のあと、可能であれば家族や近所の人にも連絡しておく</li>
+           ${triggerFlag.choking ? '<li>咳ができるなら思い切り咳をする。できなければ、椅子の背もたれやテーブルの角にみぞおちを強く押し当て、突き上げるように動く</li>' : ''}
          </ul>`;
 
     extra.innerHTML = `
