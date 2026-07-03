@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>救急車を呼ぶべき？ かんたん判断ガイド（プロトタイプ）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Zen+Maru+Gothic:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --green:#2f9e6e;
+    --green-dark:#1f7a53;
+    --yellow:#e8930a;
+    --red:#d92b2b;
+    --ink:#2a2a2a;
+    --sub:#6b6b6b;
+    --bg:#f6f7f5;
+    --card:#ffffff;
+    --line:#e3e3e0;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Noto Sans JP", sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+  }
+  #app{
+    width:100%;
+    max-width:520px;
+    min-height:100vh;
+    background:var(--card);
+    display:flex;
+    flex-direction:column;
+    box-shadow:0 0 40px rgba(0,0,0,0.06);
+  }
+  header{
+    padding:18px 20px;
+    border-bottom:1px solid var(--line);
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  header .logo{
+    font-family:"Zen Maru Gothic", sans-serif;
+    font-weight:900;
+    font-size:1.15rem;
+    color:var(--green-dark);
+  }
+  header .badge{
+    margin-left:auto;
+    font-size:0.72rem;
+    background:#fff3e0;
+    color:#a15c00;
+    border:1px solid #f0c987;
+    padding:3px 8px;
+    border-radius:999px;
+    font-weight:700;
+    white-space:nowrap;
+  }
+  main{
+    flex:1;
+    padding:24px 20px 100px;
+    display:flex;
+    flex-direction:column;
+  }
+  .disclaimer{
+    background:#fff8ec;
+    border:1px solid #f0d9a6;
+    border-radius:12px;
+    padding:14px 16px;
+    font-size:0.85rem;
+    line-height:1.7;
+    color:#7a5b12;
+    margin-bottom:22px;
+  }
+  h1{
+    font-family:"Zen Maru Gothic", sans-serif;
+    font-size:1.5rem;
+    line-height:1.5;
+    margin:0 0 12px;
+  }
+  p.lead{
+    font-size:0.98rem;
+    line-height:1.9;
+    color:var(--sub);
+    margin:0 0 26px;
+  }
+  .big-btn{
+    display:block;
+    width:100%;
+    padding:20px;
+    font-size:1.15rem;
+    font-weight:700;
+    font-family:"Zen Maru Gothic", sans-serif;
+    border:none;
+    border-radius:16px;
+    background:var(--green);
+    color:#fff;
+    cursor:pointer;
+    text-align:center;
+    box-shadow:0 6px 0 var(--green-dark);
+    transition:transform .05s;
+  }
+  .big-btn:active{ transform:translateY(4px); box-shadow:0 2px 0 var(--green-dark); }
+
+  .progress-wrap{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:26px;
+  }
+  .progress-track{
+    flex:1;
+    height:8px;
+    background:#eceae5;
+    border-radius:999px;
+    overflow:hidden;
+  }
+  .progress-fill{
+    height:100%;
+    background:var(--green);
+    border-radius:999px;
+    transition:width .25s;
+  }
+  .progress-label{
+    font-size:0.75rem;
+    color:var(--sub);
+    white-space:nowrap;
+  }
+  .stage-tag{
+    display:inline-block;
+    font-size:0.72rem;
+    font-weight:700;
+    padding:4px 10px;
+    border-radius:999px;
+    margin-bottom:14px;
+  }
+  .stage-red{ background:#fde5e5; color:var(--red); }
+  .stage-yellow{ background:#fdedd3; color:#a15c00; }
+
+  .question-text{
+    font-family:"Zen Maru Gothic", sans-serif;
+    font-size:1.35rem;
+    line-height:1.7;
+    margin:0 0 30px;
+  }
+  .choices{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    margin-bottom:20px;
+  }
+  .choice-btn{
+    width:100%;
+    padding:20px;
+    font-size:1.08rem;
+    font-weight:700;
+    border-radius:14px;
+    border:2px solid var(--line);
+    background:#fff;
+    color:var(--ink);
+    cursor:pointer;
+    text-align:left;
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  .choice-btn:active{ background:#f2f2f0; }
+  .choice-btn .dot{
+    width:14px;height:14px;border-radius:50%;
+    border:2px solid var(--line);
+    flex-shrink:0;
+  }
+  .choice-btn.yes{ border-color:#f3b8b8; }
+  .choice-btn.yes .dot{ background:var(--red); border-color:var(--red); }
+  .choice-btn.no{ border-color:#b9dcc9; }
+  .choice-btn.no .dot{ background:var(--green); border-color:var(--green); }
+  .choice-btn.unsure .dot{ background:var(--sub); border-color:var(--sub); }
+
+  .back-link{
+    background:none;border:none;color:var(--sub);
+    font-size:0.85rem;padding:8px 0;cursor:pointer;
+    text-align:left;
+  }
+
+  .result-card{
+    border-radius:20px;
+    padding:28px 22px;
+    color:#fff;
+    margin-bottom:22px;
+  }
+  .result-red{ background:linear-gradient(160deg,#e23c3c,#b81f1f); }
+  .result-yellow{ background:linear-gradient(160deg,#f0a52e,#c97a05); }
+  .result-green{ background:linear-gradient(160deg,#3cae7d,#1f7a53); }
+  .result-title{
+    font-family:"Zen Maru Gothic", sans-serif;
+    font-size:1.5rem;
+    font-weight:900;
+    line-height:1.5;
+    margin:0 0 10px;
+  }
+  .result-sub{
+    font-size:0.95rem;
+    line-height:1.8;
+    opacity:0.96;
+  }
+  .call-btn{
+    display:block;
+    width:100%;
+    text-align:center;
+    text-decoration:none;
+    background:#fff;
+    color:var(--red);
+    font-family:"Zen Maru Gothic", sans-serif;
+    font-weight:900;
+    font-size:1.4rem;
+    padding:20px;
+    border-radius:16px;
+    margin-top:18px;
+  }
+  .section-title{
+    font-weight:700;
+    font-size:0.95rem;
+    margin:26px 0 10px;
+    color:var(--ink);
+  }
+  .checklist{
+    list-style:none;
+    padding:0;margin:0 0 20px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .checklist li{
+    background:var(--bg);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:14px 16px;
+    font-size:0.92rem;
+    line-height:1.6;
+  }
+  .note-box{
+    background:var(--bg);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:16px;
+    font-size:0.88rem;
+    line-height:1.8;
+    color:var(--sub);
+    margin-bottom:20px;
+  }
+  .restart-btn{
+    width:100%;
+    padding:16px;
+    font-weight:700;
+    border-radius:14px;
+    border:2px solid var(--line);
+    background:#fff;
+    color:var(--ink);
+    cursor:pointer;
+    font-size:1rem;
+  }
+  footer{
+    padding:16px 20px 28px;
+    text-align:center;
+    font-size:0.72rem;
+    color:#b2b2ae;
+    line-height:1.7;
+  }
+  .hidden{ display:none !important; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <span class="logo">きゅうきゅう判断ガイド</span>
+    <span class="badge">プロトタイプ</span>
+  </header>
+  <main id="main">
+
+    <section id="screen-intro">
+      <div class="disclaimer">
+        これは開発中の試作版です。実際の救急判断の基準（医療監修）は未反映の一般的な目安です。<br>
+        <strong>少しでも迷ったら、このアプリの結果を待たずに119番へ電話してください。</strong>
+      </div>
+      <h1>救急車、呼ぶべきか迷っていませんか？</h1>
+      <p class="lead">
+        いくつかの質問に「はい」「いいえ」で答えるだけで、今の状況が<br>
+        ・今すぐ救急車を呼ぶべきか<br>
+        ・今日中に病院を受診すべきか<br>
+        ・少し様子を見てよいか<br>
+        の目安をお伝えします。ご本人でも、ご家族の代わりでも使えます。
+      </p>
+      <button class="big-btn" onclick="startQuiz()">はじめる</button>
+    </section>
+
+    <section id="screen-context" class="hidden">
+      <p class="question-text">今、あなたのそばに助けてくれる人はいますか？</p>
+      <p class="lead" style="margin-bottom:20px;">これによって、通報のしかたやお願いできることが変わります。</p>
+      <div class="choices">
+        <button class="choice-btn" onclick="chooseContext(true)"><span class="dot" style="background:var(--green);border-color:var(--green);"></span>そばに人がいる</button>
+        <button class="choice-btn" onclick="chooseContext(false)"><span class="dot" style="background:var(--sub);border-color:var(--sub);"></span>自分ひとりだけ（今のところ）</button>
+      </div>
+    </section>
+
+    <section id="screen-question" class="hidden">
+      <div class="progress-wrap">
+        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+        <span class="progress-label" id="progressLabel"></span>
+      </div>
+      <div id="stageTag"></div>
+      <p class="question-text" id="questionText"></p>
+      <div class="choices">
+        <button class="choice-btn yes" onclick="answer('yes')"><span class="dot"></span>はい</button>
+        <button class="choice-btn no" onclick="answer('no')"><span class="dot"></span>いいえ</button>
+        <button class="choice-btn unsure" onclick="answer('unsure')"><span class="dot"></span>わからない</button>
+      </div>
+      <button class="back-link" id="backBtn" onclick="goBack()">← 一つ前の質問に戻る</button>
+    </section>
+
+    <section id="screen-result" class="hidden">
+      <div id="resultCardWrap"></div>
+      <div id="resultExtra"></div>
+      <button class="restart-btn" onclick="startQuiz()">最初からやり直す</button>
+    </section>
+
+  </main>
+  <footer>
+    本アプリは診断を行うものではありません。緊急時は迷わず119番へ通報してください。<br>
+    Recboss（龍ケ崎） / 開発協力：救急救命士 監修予定
+  </footer>
+</div>
+
+<script>
+// 赤信号：1つでも「はい」で即座に119案内。「わからない」は保留フラグとして記録し、黄信号以上に押し上げる。
+// index 0,1(意識・呼吸)は showResult() の応急手当ブロック分岐と対応しているので、
+// 「そばに人がいる版」「自分ひとり版」ともに並び順を変えないこと。
+
+// そばに人がいる版：観察者目線（その人の様子を見て答える）
+const redQuestions_withHelper = [
+  "呼びかけても反応がない、意識がはっきりしない",
+  "呼吸をしていない、または呼吸が明らかに苦しそう（ヒューヒュー、ゼーゼーなど）",
+  "顔の片側が下がっている／片腕が上がらない／急にろれつが回らなくなった",
+  "突然の激しい胸の痛みや締め付け感を訴えている（冷や汗を伴うこともある）",
+  "けいれんが今も続いている、またはけいれんの後に反応が戻らない",
+  "大量の出血があり、押さえても止まらない",
+  "唇や顔色が紫っぽい、または明らかにいつもと違う顔色",
+  "じんましんが出て、のどの締め付けや息苦しさを訴えている（強いアレルギー反応）",
+  "頭を強く打った後、繰り返し吐いている、または意識がぼんやりしている",
+  "溺れた、またはのどに物が詰まって呼吸ができていない"
+];
+
+// 自分ひとり版：自分で気づける・試せる表現に置き換え（意識喪失は「その前兆」として聞く）
+const redQuestions_alone = [
+  "目の前が真っ暗になる、今にも気を失いそうな感じがある",
+  "息が明らかに苦しい、呼吸がいつもと違う（速い・浅い・うまく吸えない）",
+  "鏡を見ると顔の片側がゆがんでいる／片腕に力が入らずしびれる／話そうとすると言葉がうまく出ない",
+  "突然の激しい胸の痛みや締め付け感がある（冷や汗を伴うこともある）",
+  "体の一部がひきつる・視界がおかしいなどけいれんの前兆がある、またはけいれんから覚めた直後で体がおかしい",
+  "大量の出血があり、押さえても止まらない",
+  "唇の色が明らかにおかしい、または強いしびれ・脱力とめまいが同時にある",
+  "じんましんが出て、のどが締め付けられる感じや息苦しさがある（強いアレルギー反応）",
+  "頭を強く打った後、繰り返し吐き気がある、または頭がぼんやりする",
+  "のどに物が詰まって呼吸が苦しい（強く咳をしても取れない）"
+];
+
+// 黄信号：いずれか「はい」で今日中の受診を案内
+const yellowQuestions_withHelper = [
+  "高熱が出ていて、ぐったりしている（特に乳幼児・高齢者）",
+  "これまで経験したことがないほど強い痛みが急に出た",
+  "転倒などのあと、その部分が変形している、または体重をかけられない",
+  "症状がここ数十分〜数時間でどんどん悪化している",
+  "（特に高齢者で）普段の様子と明らかに違う"
+];
+
+const yellowQuestions_alone = [
+  "高熱があり、体がだるくて動くのがつらい",
+  "これまで経験したことがないほど強い痛みが急に出た",
+  "転倒などのあと、その部分が変形している、または体重をかけられない",
+  "症状がここ数十分〜数時間でどんどん悪化している",
+  "着替えや水分をとるなど、いつもの動作が急にできなくなった"
+];
+
+const RED_COUNT = redQuestions_withHelper.length;
+const YELLOW_COUNT = yellowQuestions_withHelper.length;
+
+let stage = "red"; // red -> yellow -> done
+let idx = 0;
+let history = []; // {stage, idx, answer}
+let redUnsure = false;
+let yellowHit = false;
+let hasHelper = null; // true: そばに人がいる / false: 自分ひとり
+let lastRedTrigger = -1; // どの赤信号質問で「はい」になったか
+
+function el(id){ return document.getElementById(id); }
+
+function showScreen(name){
+  ["intro","context","question","result"].forEach(s=>{
+    el("screen-"+s).classList.toggle("hidden", s!==name);
+  });
+}
+
+function startQuiz(){
+  stage = "red";
+  idx = 0;
+  history = [];
+  redUnsure = false;
+  yellowHit = false;
+  hasHelper = null;
+  lastRedTrigger = -1;
+  showScreen("context");
+}
+
+function chooseContext(val){
+  hasHelper = val;
+  showScreen("question");
+  renderQuestion();
+}
+
+function currentList(){
+  if(stage === "red") return hasHelper ? redQuestions_withHelper : redQuestions_alone;
+  return hasHelper ? yellowQuestions_withHelper : yellowQuestions_alone;
+}
+
+function renderQuestion(){
+  const list = currentList();
+  const totalRed = RED_COUNT;
+  const totalAll = RED_COUNT + YELLOW_COUNT;
+  const doneCount = stage === "red" ? idx : totalRed + idx;
+  el("progressFill").style.width = Math.round((doneCount/totalAll)*100) + "%";
+  el("progressLabel").textContent = (doneCount+1) + " / " + totalAll;
+
+  el("stageTag").innerHTML = stage === "red"
+    ? '<span class="stage-tag stage-red">緊急サイン確認中</span>'
+    : '<span class="stage-tag stage-yellow">受診の目安を確認中</span>';
+
+  el("questionText").textContent = list[idx];
+  el("backBtn").style.visibility = "visible";
+}
+
+function goBack(){
+  if(!history.length){
+    if(stage === "red" && idx === 0){
+      showScreen("context");
+    }
+    return;
+  }
+  const prev = history.pop();
+  stage = prev.stage;
+  idx = prev.idx;
+  if(prev.stage === "red" && prev.answer === "unsure") redUnsure = false;
+  if(prev.stage === "yellow" && prev.answer === "yes") yellowHit = false;
+  showScreen("question");
+  renderQuestion();
+}
+
+function answer(ans){
+  history.push({stage, idx, answer: ans});
+
+  if(stage === "red"){
+    if(ans === "yes"){
+      lastRedTrigger = idx;
+      showResult("red");
+      return;
+    }
+    if(ans === "unsure") redUnsure = true;
+    idx++;
+    if(idx >= RED_COUNT){
+      stage = "yellow";
+      idx = 0;
+    }
+    renderQuestion();
+    return;
+  }
+
+  if(stage === "yellow"){
+    if(ans === "yes" || ans === "unsure") yellowHit = true;
+    idx++;
+    if(idx >= YELLOW_COUNT){
+      if(yellowHit || redUnsure){
+        showResult("yellow");
+      } else {
+        showResult("green");
+      }
+      return;
+    }
+    renderQuestion();
+  }
+}
+
+function showResult(level){
+  showScreen("result");
+  const wrap = el("resultCardWrap");
+  const extra = el("resultExtra");
+
+  if(level === "red"){
+    wrap.innerHTML = `
+      <div class="result-card result-red">
+        <div class="result-title">今すぐ救急車を呼んでください</div>
+        <div class="result-sub">緊急のサインに該当する可能性があります。ためらわず119番へ通報してください。</div>
+        <a class="call-btn" href="tel:119">📞 119番に電話する</a>
+      </div>`;
+
+    const isBreathingOrConsciousness = (lastRedTrigger === 0 || lastRedTrigger === 1);
+    const helperBlock = hasHelper
+      ? `<div class="section-title">そばにいる人にお願いすること</div>
+         <ul class="checklist">
+           <li>119番通報と、症状をオペレーターに伝えるのを手伝ってもらう</li>
+           <li>可能なら、その人に玄関や道路まで救急隊を迎えに出てもらう</li>
+           ${isBreathingOrConsciousness ? '<li>反応がない・呼吸がおかしい場合は、電話をスピーカーにしてオペレーターの指示を聞きながら、胸骨圧迫などの応急手当をその人に始めてもらう</li>' : ''}
+         </ul>`
+      : `<div class="section-title">ひとりのときにやっておきたいこと</div>
+         <ul class="checklist">
+           <li>電話はスピーカーにして、両手を空けておく</li>
+           <li>動けるうちに玄関の鍵（マンション等は共通玄関のオートロックも）を開けておく</li>
+           <li>倒れても大きな怪我をしにくい、安全な場所に座るか横になる</li>
+           <li>通報のあと、可能であれば家族や近所の人にも連絡しておく</li>
+         </ul>`;
+
+    extra.innerHTML = `
+      <div class="section-title">電話でオペレーターに伝えること</div>
+      <ul class="checklist">
+        <li>今いる場所の住所（わかる範囲でOK）</li>
+        <li>誰に何が起きたか（年齢・性別・症状）</li>
+        <li>意識があるか、呼吸をしているか</li>
+        <li>持病・服用中の薬があれば</li>
+        <li>あなたの連絡先電話番号</li>
+      </ul>
+      ${helperBlock}
+      <div class="note-box">通報後、電話を切らずに指示を待ってください。</div>`;
+    return;
+  }
+
+  if(level === "yellow"){
+    wrap.innerHTML = `
+      <div class="result-card result-yellow">
+        <div class="result-title">今日中に病院を受診してください</div>
+        <div class="result-sub">緊急性の高いサインは今のところ見られませんが、様子見はおすすめできません。夜間・休日でも受診できる医療機関を探しましょう。</div>
+      </div>`;
+    const helperLine = hasHelper
+      ? "可能であれば、そばにいる人に付き添ってもらいましょう。"
+      : "ひとりで向かう場合は、無理に自分で運転せず、タクシーや家族の送迎を使いましょう。事前に病院へ電話しておくと安心です。";
+    extra.innerHTML = `
+      <div class="note-box">
+        ${helperLine}<br><br>
+        判断に迷った項目があった場合や、症状が急に悪くなった場合は、そのまま119番へ切り替えてください。<br>
+        お住まいの地域で「＃7119（救急安心センター）」が利用できる場合は、電話で相談することもできます。
+      </div>`;
+    return;
+  }
+
+  wrap.innerHTML = `
+    <div class="result-card result-green">
+      <div class="result-title">今のところ緊急性は低そうです</div>
+      <div class="result-sub">今回の回答からは、直ちに救急車が必要なサインは見られませんでした。ただし油断はせず、経過を見守ってください。</div>
+    </div>`;
+  const soloLine = hasHelper ? "" : "特にひとりのときは、症状が変わったらすぐ連絡できるよう、家族や知人にひとこと伝えておくと安心です。<br><br>";
+  extra.innerHTML = `
+    <div class="note-box">
+      ${soloLine}次のような場合は、この結果に関わらずすぐに119番へ連絡してください。<br>
+      ・症状が急に悪化した<br>
+      ・意識がおかしくなった、反応が鈍くなった<br>
+      ・呼吸が苦しそうになった<br><br>
+      迷ったときは、我慢せず119番へ相談してください。
+    </div>`;
+}
+</script>
+</body>
+</html>
