@@ -222,6 +222,29 @@
     border-radius:16px;
     margin-top:18px;
   }
+  .loc-btn{
+    display:block;
+    width:100%;
+    text-align:center;
+    background:rgba(255,255,255,0.15);
+    border:2px solid rgba(255,255,255,0.6);
+    color:#fff;
+    font-family:"Zen Maru Gothic", sans-serif;
+    font-weight:700;
+    font-size:1rem;
+    padding:14px;
+    border-radius:14px;
+    margin-top:12px;
+    cursor:pointer;
+  }
+  .location-status{
+    font-size:0.85rem;
+    line-height:1.7;
+    color:#fff;
+    opacity:0.95;
+    margin-top:12px;
+  }
+  .location-status a{ color:#fff; text-decoration:underline; word-break:break-all; }
   .section-title{
     font-weight:700;
     font-size:0.95rem;
@@ -520,6 +543,8 @@ function showResult(level){
         <div class="result-title">今すぐ救急車を呼んでください</div>
         <div class="result-sub">緊急のサインに該当する可能性があります。ためらわず119番へ通報してください。</div>
         <a class="call-btn" href="tel:119">📞 119番に電話する</a>
+        <button class="loc-btn" onclick="shareLocation()">📍 現在地の地図リンクを取得</button>
+        <div class="location-status" id="locationStatus"></div>
       </div>`;
 
     const triggerFlag = redFlags[lastRedTrigger] || {};
@@ -585,7 +610,42 @@ function showResult(level){
       ・意識がおかしくなった、反応が鈍くなった<br>
       ・呼吸が苦しそうになった<br><br>
       迷ったときは、我慢せず119番へ相談してください。
+    </div>
+    <div class="section-title">今のうちにできる備え</div>
+    <div class="note-box">
+      スマートフォンの「メディカルID」（iPhone）・「緊急情報」（Android）を設定しておくと、いざという時に救急隊がロック画面から持病・アレルギー・連絡先を確認できます。救急隊員は現場でこの確認方法を訓練で習っています。<br><br>
+      ・iPhone：「ヘルスケア」アプリ → 右上のプロフィールアイコン → メディカルID<br>
+      ・Android：設定 → 緊急情報（機種により名称が異なる場合があります）
     </div>`;
+}
+
+function shareLocation(){
+  const statusEl = el("locationStatus");
+  if(!navigator.geolocation){
+    statusEl.textContent = "このブラウザは位置情報の取得に対応していません。携帯電話からの119番通報では、通話するだけで大まかな位置が自動で消防に伝わります。";
+    return;
+  }
+  statusEl.textContent = "現在地を取得しています…";
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const lat = pos.coords.latitude.toFixed(6);
+      const lng = pos.coords.longitude.toFixed(6);
+      const mapUrl = `https://maps.google.com/?q=${lat},${lng}`;
+      const render = (copied) => {
+        statusEl.innerHTML = (copied ? "リンクをコピーしました。" : "") +
+          `<br>現在地：<a href="${mapUrl}" target="_blank" rel="noopener">${mapUrl}</a><br>このリンクを家族に送るか、オペレーターに「地図のリンクを送ります」と伝えてください。`;
+      };
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(mapUrl).then(() => render(true)).catch(() => render(false));
+      } else {
+        render(false);
+      }
+    },
+    () => {
+      statusEl.textContent = "位置情報を取得できませんでした。携帯電話からの119番通報では、通話するだけで大まかな位置が自動で消防に伝わります。可能であれば近くの建物名や目印を伝えてください。";
+    },
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
 }
 </script>
 </body>
